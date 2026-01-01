@@ -99,6 +99,15 @@
   gap: 12px;
 }
 
+.badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  font-size: 12px;
+  color: #333;
+}
+
 .output {
   background: #111;
   color: #e2e2e2;

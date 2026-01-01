@@ -26,6 +26,11 @@ public class MatchingService {
         MatchingStatus.REQUESTED, MatchingStatus.ACCEPTED
     );
 
+    private enum ActorRole {
+        REQUESTER,
+        TARGET
+    }
+
     private final MatchingRepository matchingRepository;
     private final UserRepository userRepository;
 
@@ -88,45 +93,54 @@ public class MatchingService {
 
         MatchingStatus current = matching.getStatus();
         MatchingStatus next = request.getStatus();
-
-        if (current == MatchingStatus.REJECTED || current == MatchingStatus.CANCELLED || current == MatchingStatus.ENDED) {
-            throw AppException.of(ErrorCode.MATCH_INVALID_STATE, "Matching already closed", HttpStatus.CONFLICT);
-        }
-
-        if (current == MatchingStatus.REQUESTED) {
-            if (next == MatchingStatus.ACCEPTED || next == MatchingStatus.REJECTED) {
-                if (!matching.getTarget().getId().equals(userId)) {
-                    throw AppException.of(ErrorCode.AUTH_UNAUTHORIZED, "Only target user can respond", HttpStatus.FORBIDDEN);
-                }
-                matching.setStatus(next);
-                return toResponse(matching);
-            }
-            if (next == MatchingStatus.CANCELLED) {
-                if (!matching.getRequester().getId().equals(userId)) {
-                    throw AppException.of(ErrorCode.AUTH_UNAUTHORIZED, "Only requester can cancel", HttpStatus.FORBIDDEN);
-                }
-                matching.setStatus(MatchingStatus.CANCELLED);
-                return toResponse(matching);
-            }
-            throw AppException.of(ErrorCode.MATCH_INVALID_STATE, "Invalid status transition", HttpStatus.CONFLICT);
-        }
-
-        if (current == MatchingStatus.ACCEPTED) {
-            if (next != MatchingStatus.ENDED) {
-                throw AppException.of(ErrorCode.MATCH_INVALID_STATE, "Invalid status transition", HttpStatus.CONFLICT);
-            }
-            ensureParticipant(userId, matching);
-            matching.setStatus(MatchingStatus.ENDED);
-            return toResponse(matching);
-        }
-
-        throw AppException.of(ErrorCode.MATCH_INVALID_STATE, "Invalid status transition", HttpStatus.CONFLICT);
+        ActorRole role = resolveActorRole(userId, matching);
+        validateTransition(current, next, role);
+        matching.setStatus(next);
+        return toResponse(matching);
     }
 
     private void ensureParticipant(Long userId, Matching matching) {
         if (!matching.getRequester().getId().equals(userId) && !matching.getTarget().getId().equals(userId)) {
             throw AppException.of(ErrorCode.AUTH_UNAUTHORIZED, "Forbidden", HttpStatus.FORBIDDEN);
         }
+    }
+
+    private ActorRole resolveActorRole(Long userId, Matching matching) {
+        if (matching.getRequester().getId().equals(userId)) {
+            return ActorRole.REQUESTER;
+        }
+        if (matching.getTarget().getId().equals(userId)) {
+            return ActorRole.TARGET;
+        }
+        throw AppException.of(ErrorCode.AUTH_UNAUTHORIZED, "Forbidden", HttpStatus.FORBIDDEN);
+    }
+
+    private void validateTransition(MatchingStatus current, MatchingStatus next, ActorRole role) {
+        if (current == MatchingStatus.REJECTED || current == MatchingStatus.CANCELLED || current == MatchingStatus.ENDED) {
+            throw AppException.of(ErrorCode.MATCH_INVALID_STATE, "Matching already closed", HttpStatus.CONFLICT);
+        }
+        if (current == MatchingStatus.REQUESTED) {
+            if (next == MatchingStatus.ACCEPTED || next == MatchingStatus.REJECTED) {
+                if (role != ActorRole.TARGET) {
+                    throw AppException.of(ErrorCode.AUTH_UNAUTHORIZED, "Only target user can respond", HttpStatus.FORBIDDEN);
+                }
+                return;
+            }
+            if (next == MatchingStatus.CANCELLED) {
+                if (role != ActorRole.REQUESTER) {
+                    throw AppException.of(ErrorCode.AUTH_UNAUTHORIZED, "Only requester can cancel", HttpStatus.FORBIDDEN);
+                }
+                return;
+            }
+            throw AppException.of(ErrorCode.MATCH_INVALID_STATE, "Invalid status transition", HttpStatus.CONFLICT);
+        }
+        if (current == MatchingStatus.ACCEPTED) {
+            if (next != MatchingStatus.ENDED) {
+                throw AppException.of(ErrorCode.MATCH_INVALID_STATE, "Invalid status transition", HttpStatus.CONFLICT);
+            }
+            return;
+        }
+        throw AppException.of(ErrorCode.MATCH_INVALID_STATE, "Invalid status transition", HttpStatus.CONFLICT);
     }
 
     private MatchingResponse toResponse(Matching matching) {

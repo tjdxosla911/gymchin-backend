@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GymChin Matching Test UI</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="header">
+        <div>
+          <h1>GymChin Matching Test UI</h1>
+          <p class="muted">Base URL: <span id="baseUrl"></span></p>
+        </div>
+        <div class="token-box">
+          <div class="token-label">Access Token</div>
+          <div id="tokenValue" class="token-value">(none)</div>
+          <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+        </div>
+      </header>
+
+      <section class="panel">
+        <h2>Login</h2>
+        <div class="grid">
+          <label>Email
+            <input id="emailInput" type="email" placeholder="user@example.com" />
+          </label>
+          <label>Password
+            <input id="passwordInput" type="password" placeholder="password" />
+          </label>
+          <label>Nickname (for signup)
+            <input id="nicknameInput" type="text" placeholder="gymmate" />
+          </label>
+        </div>
+        <div class="actions">
+          <button id="loginBtn" class="btn">Login</button>
+          <button id="signupBtn" class="btn btn-secondary">Signup</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Quick Actions</h2>
+        <div class="actions">
+          <button id="meBtn" class="btn">/me</button>
+          <button id="gymmatesBtn" class="btn">/gymmates</button>
+          <button id="sentBtn" class="btn">/matchings/sent</button>
+          <button id="receivedBtn" class="btn">/matchings/received</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Create Matching</h2>
+        <div class="grid">
+          <label>Target User ID
+            <input id="targetUserIdInput" type="number" min="1" placeholder="targetUserId" />
+          </label>
+          <label>Message
+            <input id="messageInput" type="text" placeholder="let's gym together" />
+          </label>
+        </div>
+        <div class="actions">
+          <button id="createMatchingBtn" class="btn">Create Matching</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>My Info</h2>
+        <pre id="meOutput" class="output">(empty)</pre>
+      </section>
+
+      <section class="panel">
+        <h2>Gymmates</h2>
+        <div id="gymmatesOutput" class="list"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Sent Matchings</h2>
+        <div id="sentOutput" class="list"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Received Matchings</h2>
+        <div id="receivedOutput" class="list"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Request Log</h2>
+        <pre id="logOutput" class="output"></pre>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

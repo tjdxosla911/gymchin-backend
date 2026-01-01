@@ -139,16 +139,23 @@ function renderMatchings(target, items, isReceived) {
     card.className = 'card';
     const row = document.createElement('div');
     row.className = 'card-row';
+    const role =
+      currentUserId === match.requesterUserId
+        ? 'REQUESTER'
+        : currentUserId === match.targetUserId
+          ? 'TARGET'
+          : 'UNKNOWN';
     row.innerHTML = `
       <div>
         <strong>Matching #${match.matchingId}</strong>
         <div>Status: ${match.status}</div>
         <div>Requester: ${match.requesterUserId}</div>
         <div>Target: ${match.targetUserId}</div>
+        <div>Role: <span class="badge">${role}</span></div>
       </div>
     `;
 
-    if (isReceived && match.status === 'REQUESTED') {
+    if (match.status === 'REQUESTED' && role === 'TARGET') {
       const actions = document.createElement('div');
       actions.className = 'actions';
 
@@ -166,10 +173,41 @@ function renderMatchings(target, items, isReceived) {
       rejectBtn.addEventListener('click', async () => {
         await updateStatus(match.matchingId, 'REJECTED');
         await loadReceived();
+        await loadSent();
       });
 
       actions.appendChild(acceptBtn);
       actions.appendChild(rejectBtn);
+      row.appendChild(actions);
+    }
+
+    if (match.status === 'REQUESTED' && role === 'REQUESTER') {
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'btn btn-secondary';
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.addEventListener('click', async () => {
+        await updateStatus(match.matchingId, 'CANCELLED');
+        await loadSent();
+        await loadReceived();
+      });
+      actions.appendChild(cancelBtn);
+      row.appendChild(actions);
+    }
+
+    if (match.status === 'ACCEPTED' && role !== 'UNKNOWN') {
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+      const endBtn = document.createElement('button');
+      endBtn.className = 'btn';
+      endBtn.textContent = 'End';
+      endBtn.addEventListener('click', async () => {
+        await updateStatus(match.matchingId, 'ENDED');
+        await loadSent();
+        await loadReceived();
+      });
+      actions.appendChild(endBtn);
       row.appendChild(actions);
     }
 
@@ -195,6 +233,7 @@ async function login() {
     return;
   }
   setToken(token);
+  await loadMe();
   logMessage('Login success');
 }
 
@@ -213,12 +252,14 @@ async function signup() {
   const token = body?.data?.accessToken || body?.accessToken;
   if (token) {
     setToken(token);
+    await loadMe();
   }
   logMessage('Signup success');
 }
 
 async function loadMe() {
   const body = await requestJson('/me', { method: 'GET' });
+  currentUserId = body?.data?.userId ?? body?.userId ?? null;
   renderJson(meOutputEl, body?.data || body);
   logMessage('Loaded /me');
 }
@@ -269,6 +310,7 @@ async function updateStatus(matchingId, status) {
 
 function logout() {
   setToken('');
+  currentUserId = null;
   renderJson(meOutputEl, null);
   gymmatesOutputEl.textContent = '';
   sentOutputEl.textContent = '';
@@ -287,6 +329,10 @@ function init() {
   receivedBtn.addEventListener('click', () => loadReceived().catch((err) => logMessage(err.message)));
   createMatchingBtn.addEventListener('click', () => createMatching().catch((err) => logMessage(err.message)));
   logoutBtn.addEventListener('click', logout);
+  if (getToken()) {
+    loadMe().catch(() => {});
+  }
 }
 
 init();
+let currentUserId = null;

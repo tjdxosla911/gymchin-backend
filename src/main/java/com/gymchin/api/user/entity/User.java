@@ -30,6 +30,9 @@ public class User {
     @Column(nullable = false)
     private String nickname;
 
+    @Column
+    private String password;
+
     private String gender;
     private Integer age;
     private String city;
@@ -79,6 +82,10 @@ public class User {
 
     public String getNickname() {
         return nickname;
+    }
+
+    public String getPassword() {
+        return password;
     }
 
     public String getGender() {
@@ -159,6 +166,10 @@ public class User {
 
     public void setGoals(Set<String> goals) {
         this.goals = goals == null ? new HashSet<>() : new HashSet<>(goals);
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public void setPreferredDays(Set<String> preferredDays) {

@@ -2,6 +2,8 @@ package com.gymchin.api.user.controller;
 
 import com.gymchin.api.common.dto.ApiResponse;
 import com.gymchin.api.user.dto.AuthLoginRequest;
+import com.gymchin.api.user.dto.AuthLogoutRequest;
+import com.gymchin.api.user.dto.AuthRefreshRequest;
 import com.gymchin.api.user.dto.AuthSignupRequest;
 import com.gymchin.api.user.dto.AuthTokenResponse;
 import com.gymchin.api.user.service.AuthService;
@@ -32,5 +34,16 @@ public class AuthController {
     @PostMapping("/login")
     public ApiResponse<AuthTokenResponse> login(@Valid @RequestBody AuthLoginRequest request) {
         return ApiResponse.success(authService.login(request));
+    }
+
+    @PostMapping("/refresh")
+    public ApiResponse<AuthTokenResponse> refresh(@Valid @RequestBody AuthRefreshRequest request) {
+        return ApiResponse.success(authService.refresh(request));
+    }
+
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout(@Valid @RequestBody AuthLogoutRequest request) {
+        authService.logout(request);
+        return ApiResponse.success(null);
     }
 }

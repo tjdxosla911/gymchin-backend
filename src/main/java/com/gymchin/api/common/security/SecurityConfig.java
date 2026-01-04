@@ -13,10 +13,15 @@ public class SecurityConfig {
 
     private final RestAuthenticationEntryPoint authenticationEntryPoint;
     private final RestAccessDeniedHandler accessDeniedHandler;
+    private final JwtService jwtService;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
-    public SecurityConfig(RestAuthenticationEntryPoint authenticationEntryPoint, RestAccessDeniedHandler accessDeniedHandler) {
+    public SecurityConfig(RestAuthenticationEntryPoint authenticationEntryPoint, RestAccessDeniedHandler accessDeniedHandler,
+                          JwtService jwtService, com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
         this.authenticationEntryPoint = authenticationEntryPoint;
         this.accessDeniedHandler = accessDeniedHandler;
+        this.jwtService = jwtService;
+        this.objectMapper = objectMapper;
     }
 
     @Bean
@@ -32,7 +37,8 @@ public class SecurityConfig {
                 .authenticationEntryPoint(authenticationEntryPoint)
                 .accessDeniedHandler(accessDeniedHandler)
             )
-            .addFilterBefore(new BearerTokenAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(new BearerTokenAuthenticationFilter(jwtService, objectMapper),
+                UsernamePasswordAuthenticationFilter.class)
             .httpBasic(Customizer.withDefaults());
         return http.build();
     }

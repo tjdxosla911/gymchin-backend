@@ -14,9 +14,13 @@
           <p class="muted">Base URL: <span id="baseUrl"></span></p>
         </div>
         <div class="token-box">
-          <div class="token-label">Access Token</div>
+          <div class="token-label">Tokens</div>
           <div id="tokenValue" class="token-value">(none)</div>
-          <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+          <div id="refreshTokenValue" class="token-value">(none)</div>
+          <div class="actions">
+            <button id="refreshBtn" class="btn">Refresh</button>
+            <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+          </div>
         </div>
       </header>
 

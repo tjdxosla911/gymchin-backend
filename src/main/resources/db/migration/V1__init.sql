@@ -2,6 +2,7 @@ create table users (
     id bigserial primary key,
     email varchar(255) not null unique,
     nickname varchar(255) not null,
+    password varchar(255),
     gender varchar(50),
     age integer,
     city varchar(100),

@@ -1,10 +1,12 @@
 const API_BASE = '/api/v1';
 const ACCESS_TOKEN_KEY = 'accessToken';
+const REFRESH_TOKEN_KEY = 'refreshToken';
 
 const el = (id) => document.getElementById(id);
 
 const baseUrlEl = el('baseUrl');
 const tokenValueEl = el('tokenValue');
+const refreshTokenValueEl = el('refreshTokenValue');
 const logOutputEl = el('logOutput');
 const meOutputEl = el('meOutput');
 const gymmatesOutputEl = el('gymmatesOutput');
@@ -24,24 +26,38 @@ const gymmatesBtn = el('gymmatesBtn');
 const sentBtn = el('sentBtn');
 const receivedBtn = el('receivedBtn');
 const createMatchingBtn = el('createMatchingBtn');
+const refreshBtn = el('refreshBtn');
 const logoutBtn = el('logoutBtn');
 
 function getToken() {
   return localStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
-function setToken(token) {
-  if (token) {
-    localStorage.setItem(ACCESS_TOKEN_KEY, token);
+function getRefreshToken() {
+  return localStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
+function setTokens(accessToken, refreshToken) {
+  if (accessToken) {
+    localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
   } else {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
+  }
+  if (refreshToken) {
+    localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+  } else {
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
   }
   renderToken();
 }
 
 function renderToken() {
   const token = getToken();
-  tokenValueEl.textContent = token ? `${token.slice(0, 8)}...` : '(none)';
+  const refreshToken = getRefreshToken();
+  tokenValueEl.textContent = token ? `access: ${token.slice(0, 12)}...` : 'access: (none)';
+  refreshTokenValueEl.textContent = refreshToken
+    ? `refresh: ${refreshToken.slice(0, 12)}...`
+    : 'refresh: (none)';
 }
 
 function logMessage(message) {
@@ -227,12 +243,13 @@ async function login() {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   });
-  const token = body?.data?.accessToken || body?.accessToken;
-  if (!token) {
+  const accessToken = body?.data?.accessToken || body?.accessToken;
+  const refreshToken = body?.data?.refreshToken || body?.refreshToken;
+  if (!accessToken || !refreshToken) {
     alert('No accessToken returned.');
     return;
   }
-  setToken(token);
+  setTokens(accessToken, refreshToken);
   await loadMe();
   logMessage('Login success');
 }
@@ -249,9 +266,10 @@ async function signup() {
     method: 'POST',
     body: JSON.stringify({ email, password, nickname }),
   });
-  const token = body?.data?.accessToken || body?.accessToken;
-  if (token) {
-    setToken(token);
+  const accessToken = body?.data?.accessToken || body?.accessToken;
+  const refreshToken = body?.data?.refreshToken || body?.refreshToken;
+  if (accessToken && refreshToken) {
+    setTokens(accessToken, refreshToken);
     await loadMe();
   }
   logMessage('Signup success');
@@ -308,8 +326,31 @@ async function updateStatus(matchingId, status) {
   logMessage(`Updated matching ${matchingId} -> ${status}`);
 }
 
+async function refreshTokens() {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) {
+    alert('No refresh token found.');
+    return;
+  }
+  const body = await requestJson('/auth/refresh', {
+    method: 'POST',
+    body: JSON.stringify({ refreshToken }),
+  });
+  const accessToken = body?.data?.accessToken || body?.accessToken;
+  const newRefreshToken = body?.data?.refreshToken || body?.refreshToken;
+  setTokens(accessToken, newRefreshToken);
+  logMessage('Token refreshed');
+}
+
 function logout() {
-  setToken('');
+  const refreshToken = getRefreshToken();
+  if (refreshToken) {
+    requestJson('/auth/logout', {
+      method: 'POST',
+      body: JSON.stringify({ refreshToken }),
+    }).catch(() => {});
+  }
+  setTokens('', '');
   currentUserId = null;
   renderJson(meOutputEl, null);
   gymmatesOutputEl.textContent = '';
@@ -328,6 +369,7 @@ function init() {
   sentBtn.addEventListener('click', () => loadSent().catch((err) => logMessage(err.message)));
   receivedBtn.addEventListener('click', () => loadReceived().catch((err) => logMessage(err.message)));
   createMatchingBtn.addEventListener('click', () => createMatching().catch((err) => logMessage(err.message)));
+  refreshBtn.addEventListener('click', () => refreshTokens().catch((err) => logMessage(err.message)));
   logoutBtn.addEventListener('click', logout);
   if (getToken()) {
     loadMe().catch(() => {});
